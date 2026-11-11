@@ -1,15 +1,11 @@
 
-name: Build ERAM GEOMATICS APK
+name: Inspect ERAM Android Project
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'ERAM_GEOMATICS_Android_Studio_v8_Project.zip'
-      - '.github/workflows/android.yml'
 
 jobs:
-  build:
+  inspect:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,41 +17,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Extract Android project
+      - name: Extract project
         run: |
           unzip -q ERAM_GEOMATICS_Android_Studio_v8_Project.zip -d extracted
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-
-      - name: Fix Java and Kotlin versions
+      - name: Inspect Gradle files
         run: |
-          cat >> extracted/ERAM_GEOMATICS_Android_Studio/app/build.gradle <<'EOF'
+          echo "===== PROJECT FILES ====="
+          find extracted -type f \( -name "build.gradle" -o -name "build.gradle.kts" -o -name "settings.gradle" -o -name "settings.gradle.kts" \) -print
 
-          android {
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-          }
-
-          tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-          }
-          EOF
-
-      - name: Build APK
-        run: |
-          cd extracted/ERAM_GEOMATICS_Android_Studio
-          gradle assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ERAM-GEOMATICS-APK
-          path: extracted/ERAM_GEOMATICS_Android_Studio/app/build/outputs/apk/debug/app-debug.apk
+          echo "===== GRADLE CONFIGURATION ====="
+          find extracted -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -print0 | while IFS= read -r -d '' file; do
+            echo "===== FILE: $file ====="
+            cat "$file"
+          done
           
